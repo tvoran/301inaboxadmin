@@ -1,10 +1,11 @@
+import redis
 
 class RedirectException(Exception):
     def __init__(self, msg):
         super(Exception, self).__init__(msg)
 
 class DataStore(object):
-    """Our abstracted datastore. This base class is just a dictionary. 
+    """Our abstracted datastore. This base class is just a dictionary.
     Subclass this and override the __setitem__, __getitem__, and get
     methods to use some other storage."""
 
@@ -40,3 +41,26 @@ class DataStore(object):
             data[key] = value
         return data
 
+
+class RedisDataStore(DataStore):
+    """Redis-backed datastore object."""
+
+    def __init__(self):
+        #TODO(tvoran): get host and port from config or env
+        self.redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+    def __setitem__(self, k, v):
+        self.redis_conn.set(k, v)
+
+    def __getitem__(self, k):
+        return self.redis_conn.get(k)
+
+    def get(self, k):
+        return self.redis_conn.get(k)
+
+    def todict(self):
+        #TODO(tvoran): use paginate
+        data = {}
+        for key, value in self.redis_conn.scan():
+            data[key] = value
+        return data
